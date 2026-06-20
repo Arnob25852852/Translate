@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bangla to Chinese Tourist Translator</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & Hind Siliguri for beautiful Bangla/English typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- GSAP for Smooth UI Animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'Hind Siliguri', 'sans-serif'],
+                    },
+                    colors: {
+                        chinaRed: {
+                            50: '#fff1f1',
+                            100: '#ffe1e1',
+                            500: '#ee2c2c',
+                            600: '#dc143c',
+                            700: '#b21030',
+                            900: '#7f051d',
+                        },
+                        bdGreen: {
+                            500: '#006a4e',
+                            600: '#00523c',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', 'Hind Siliguri', sans-serif;
+            overscroll-behavior-y: contain;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.5);
+            border-radius: 9999px;
+        }
+        /* Audio Waves Animation */
+        .wave-bar {
+            animation: bounce 0.8s ease-in-out infinite alternate;
+        }
+        .wave-bar:nth-child(2) { animation-delay: 0.15s; }
+        .wave-bar:nth-child(3) { animation-delay: 0.3s; }
+        .wave-bar:nth-child(4) { animation-delay: 0.45s; }
+        .wave-bar:nth-child(5) { animation-delay: 0.6s; }
+        
+        @keyframes bounce {
+            0% { height: 4px; }
+            100% { height: 32px; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50 transition-colors duration-300 min-h-screen flex flex-col antialiased selection:bg-chinaRed-500 selection:text-white">
+
+    <!-- Top Navbar -->
+    <header class="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-chinaRed-600 to-bdGreen-500 flex items-center justify-center text-white shadow-md shadow-chinaRed-500/20">
+                    <i class="fa-solid fa-language text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-md font-bold tracking-tight bg-gradient-to-r from-chinaRed-600 to-bdGreen-500 bg-clip-text text-transparent flex items-center gap-1">
+                        BN <i class="fa-solid fa-right-left text-xs text-slate-400"></i> CN
+                    </h1>
+                    <p class="text-[10px] text-slate-500 dark:text-slate-400 font-medium tracking-wider uppercase">Tourist Translator</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-2">
+                <!-- Theme Toggle -->
+                <button id="themeToggle" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:scale-105 active:scale-95 transition-all" aria-label="Toggle Dark Mode">
+                    <i class="fa-solid fa-moon dark:hidden text-lg"></i>
+                    <i class="fa-solid fa-sun hidden dark:block text-lg"></i>
+                </button>
+                
+                <!-- Quick Info Modal Trigger -->
+                <button id="infoToggle" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:scale-105 active:scale-95 transition-all" aria-label="App Info">
+                    <i class="fa-solid fa-circle-info text-lg"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Dynamic Content Wrapper -->
+    <main class="flex-grow max-w-4xl w-full mx-auto px-4 py-5 flex flex-col relative">
+
+        <!-- Toast Notification system -->
+        <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl bg-slate-900/90 text-white text-sm font-semibold shadow-2xl flex items-center gap-3 border border-slate-700/50 pointer-events-none opacity-0 transition-opacity duration-300">
+            <i class="fa-solid fa-circle-check text-emerald-400" id="toastIcon"></i>
+            <span id="toastMsg">লিঙ্ক কপি হয়েছে!</span>
+        </div>
+
+        <!-- Info / Quick Tips Modal -->
+        <div id="infoModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4">
+            <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-800 relative scale-95 opacity-0 transition-all duration-300" id="infoContent">
+                <button id="closeInfo" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 rounded-xl bg-chinaRed-100 dark:bg-chinaRed-950/50 flex items-center justify-center text-chinaRed-600 dark:text-chinaRed-400">
+                        <i class="fa-solid fa-circle-question text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold">ব্যবহারের নিয়মাবলী</h3>
+                </div>
+                <div class="space-y-4 text-slate-600 dark:text-slate-300 text-sm leading-relaxed">
+                    <div class="flex gap-3">
+                        <span class="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 flex items-center justify-center text-xs font-bold shrink-0">১</span>
+                        <p>যেকোনো ক্যাটাগরি বা সার্চ বার ব্যবহার করে প্রয়োজনীয় বাংলা বাক্যটি নির্বাচন করুন।</p>
+                    </div>
+                    <div class="flex gap-3">
+                        <span class="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 flex items-center justify-center text-xs font-bold shrink-0">২</span>
+                        <p>সিঙ্গেল ফ্রেম ভিউ অন হলে আপনার মোবাইল স্ক্রিনটি চীনা নাগরিকের সামনে ধরুন।</p>
+                    </div>
+                    <div class="flex gap-3">
+                        <span class="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 flex items-center justify-center text-xs font-bold shrink-0">৩</span>
+                        <p><strong class="text-chinaRed-500"><i class="fa-solid fa-volume-high"></i> স্পিকার</strong> বাটনটি ক্লিক করে চীনা উচ্চারণে সঠিক আওয়াজ শোনান।</p>
+                    </div>
+                    <div class="flex gap-3">
+                        <span class="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 flex items-center justify-center text-xs font-bold shrink-0">৪</span>
+                        <p>ফন্ট সাইজ অতিরিক্ত ছোট মনে হলে <strong>"ফন্ট বড় করুন"</strong> বাটনটি ব্যবহার করুন।</p>
+                    </div>
+                </div>
+                <button id="confirmInfo" class="mt-6 w-full py-3 rounded-xl bg-chinaRed-600 hover:bg-chinaRed-700 text-white font-bold transition-all shadow-lg shadow-chinaRed-500/20">
+                    বুঝেছি, ধন্যবাদ
+                </button>
+            </div>
+        </div>
+
+        <!-- VIEW 1: DASHBOARD VIEW -->
+        <section id="dashboardView" class="w-full flex flex-col space-y-6">
+            
+            <!-- Quick Helper Note -->
+            <div class="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 border border-emerald-100 dark:border-emerald-900/40 p-4 rounded-2xl flex items-start gap-3 shadow-sm">
+                <div class="text-emerald-600 dark:text-emerald-400 text-lg mt-0.5 shrink-0">
+                    <i class="fa-solid fa-circle-check"></i>
+                </div>
+                <div class="text-xs md:text-sm text-emerald-800 dark:text-emerald-300">
+                    <span class="font-bold">১০০% অফলাইন!</span> চীন ভ্রমণের সময় ইন্টারনেট কানেকশন না থাকলেও যেকোনো চীনা নাগরিকের সাথে তাৎক্ষণিক যোগাযোগের চমৎকার মাধ্যম।
+                </div>
+            </div>
+
+            <!-- Beautiful Interactive Search Bar -->
+            <div class="relative w-full">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-slate-400 dark:text-slate-500">
+                    <i class="fa-solid fa-magnifying-glass text-lg"></i>
+                </span>
+                <input 
+                    type="text" 
+                    id="searchInput" 
+                    placeholder="বাংলা অথবা চীনা শব্দ দিয়ে সার্চ করুন... (উদা: পানি, হোটেল, দাম)" 
+                    class="w-full pl-12 pr-12 py-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-chinaRed-500 focus:border-transparent transition-all shadow-sm"
+                >
+                <button id="clearSearch" class="hidden absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                    <i class="fa-solid fa-circle-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Category Filter Grid Grid -->
+            <div>
+                <h3 class="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-3 flex items-center justify-between">
+                    <span>ক্যাটাগরি সমূহ</span>
+                    <span id="activeCount" class="text-xs text-slate-500 bg-slate-200/60 dark:bg-slate-800 px-2 py-0.5 rounded-full font-semibold">সকল অনুবাদ</span>
+                </h3>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3" id="categoryGrid">
+                    <!-- Categories will be dynamically active -->
+                    <button data-cat="all" class="cat-btn flex flex-col items-center justify-center p-3 rounded-2xl bg-chinaRed-600 text-white border-2 border-transparent transition-all shadow-md">
+                        <span class="text-2xl mb-1">🌎</span>
+                        <span class="text-xs font-bold">সবগুলো</span>
+                    </button>
+                    <button data-cat="emergency" class="cat-btn flex flex-col items-center justify-center p-3 rounded-2xl bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 hover:border-chinaRed-500 hover:shadow-md transition-all">
+                        <span class="text-2xl mb-1">🚨</span>
+                        <span class="text-xs font-bold">জরুরি</span>
+                    </button>
+                    <button data-cat="transport" class="cat-btn flex flex-col items-center justify-center p-3 rounded-2xl bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 hover:border-chinaRed-500 hover:shadow-md transition-all">
+                        <span class="text-2xl mb-1">🚗</span>
+                        <span class="text-xs font-bold">যাতায়াত</span>
+                    </button>
+                    <button data-cat="food" class="cat-btn flex flex-col items-center justify-center p-3 rounded-2xl bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 hover:border-chinaRed-500 hover:shadow-md transition-all">
+                        <span class="text-2xl mb-1">🍜</span>
+                        <span class="text-xs font-bold">খাবার</span>
+                    </button>
+                    <button data-cat="shopping" class="cat-btn flex flex-col items-center justify-center p-3 rounded-2xl bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 hover:border-chinaRed-500 hover:shadow-md transition-all">
+                        <span class="text-2xl mb-1">🛒</span>
+                        <span class="text-xs font-bold">কেনাকাটা</span>
+                    </button>
+                    <button data-cat="hotel" class="cat-btn col-span-2 sm:col-span-1 flex flex-col items-center justify-center p-3 rounded-2xl bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 hover:border-chinaRed-500 hover:shadow-md transition-all">
+                        <span class="text-2xl mb-1">🏨</span>
+                        <span class="text-xs font-bold">হোটেল</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Phrase Lists Area -->
+            <div>
+                <h3 class="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-3">অনুবাদ তালিকা</h3>
+                <div class="space-y-3" id="phraseListContainer">
+                    <!-- Cards are rendered dynamically -->
+                </div>
+                <!-- Empty State Message -->
+                <div id="emptyState" class="hidden text-center py-12 px-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
+                    <span class="text-5xl">🔍</span>
+                    <h3 class="text-lg font-bold mt-4">কোনো মিল খুঁজে পাওয়া যায়নি!</h3>
+                    <p class="text-slate-400 dark:text-slate-500 mt-1 text-sm">অনুগ্রহ করে অন্য কোনো শব্দ বা বাক্য লিখে চেষ্টা করুন।</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 2: SINGLE FRAME VIEW (Zero Distraction Interface) -->
+        <section id="singleFrameView" class="hidden fixed inset-0 z-50 bg-slate-100 dark:bg-slate-950 flex flex-col h-full w-full">
+            
+            <!-- Frame Header Controls -->
+            <div class="px-4 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 transition-colors">
+                <button id="closeFrameBtn" class="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 font-bold text-sm transition-all text-slate-700 dark:text-slate-200">
+                    <i class="fa-solid fa-arrow-left"></i> তালিকা
+                </button>
+                
+                <span id="frameCategoryBadge" class="text-xs px-3 py-1.5 rounded-full font-bold bg-chinaRed-100 text-chinaRed-700 dark:bg-chinaRed-950/40 dark:text-chinaRed-300">
+                    ক্যাটাগরি
+                </span>
+                
+                <div class="flex items-center gap-1.5">
+                    <button id="toggleFontSizeBtn" class="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-all" title="ফন্ট বড় করুন">
+                        <i class="fa-solid fa-magnifying-glass-plus text-lg"></i>
+                    </button>
+                    <button id="copyChineseBtn" class="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-all" title="চীনা লেখা কপি করুন">
+                        <i class="fa-solid fa-copy text-lg"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Core Translating Canvas / Container -->
+            <div class="flex-grow flex flex-col justify-between p-6 max-w-3xl mx-auto w-full relative">
+                
+                <!-- Bangla Reference -->
+                <div class="text-center mt-4">
+                    <span class="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 block mb-1">বাংলা অনুবাদ (আপনার জন্য)</span>
+                    <h2 id="frameBangla" class="text-xl md:text-2xl font-bold leading-relaxed text-slate-800 dark:text-slate-100 px-4">
+                        বাথরুম/ওয়াশরুম কোথায়?
+                    </h2>
+                </div>
+
+                <!-- HUGE Chinese Character Frame For Local Native to read -->
+                <div class="my-auto py-8 text-center flex flex-col items-center justify-center">
+                    <span class="text-xs font-bold uppercase tracking-widest text-chinaRed-500 block mb-3">স্থানীয় ব্যক্তির জন্য (Show This to Local)</span>
+                    
+                    <div class="w-full px-4 overflow-x-auto select-all">
+                        <p id="frameChinese" class="text-6xl md:text-8xl font-black text-slate-950 dark:text-white tracking-wide transition-all duration-300 leading-tight">
+                            洗手间在哪里？
+                        </p>
+                    </div>
+
+                    <!-- Romanization / Pronunciation Guide -->
+                    <div class="mt-6 inline-flex items-center gap-2 bg-slate-200/50 dark:bg-slate-900 px-4 py-2 rounded-2xl border border-slate-300/30">
+                        <span class="text-xs font-bold text-slate-400">Pinyin:</span>
+                        <span id="framePinyin" class="font-semibold text-slate-700 dark:text-slate-300 tracking-wide text-base md:text-lg">
+                            Xǐshǒujiān zài nǎlǐ?
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Voice Trigger Panel & Ripple Waves -->
+                <div class="flex flex-col items-center gap-6 mb-4">
+                    
+                    <!-- Dynamic Sound Wave Equalizer (Visually Reacts to Synthesis Speech) -->
+                    <div id="speechWaveform" class="h-10 flex items-center justify-center gap-1 opacity-0 transition-opacity duration-300">
+                        <div class="wave-bar w-1.5 bg-chinaRed-500 rounded-full h-1"></div>
+                        <div class="wave-bar w-1.5 bg-chinaRed-500 rounded-full h-1"></div>
+                        <div class="wave-bar w-1.5 bg-chinaRed-500 rounded-full h-1"></div>
+                        <div class="wave-bar w-1.5 bg-chinaRed-500 rounded-full h-1"></div>
+                        <div class="wave-bar w-1.5 bg-chinaRed-500 rounded-full h-1"></div>
+                    </div>
+
+                    <!-- Master Audio Button -->
+                    <button id="frameSpeakBtn" class="w-24 h-24 rounded-full bg-gradient-to-tr from-chinaRed-600 to-red-500 text-white flex flex-col items-center justify-center shadow-xl shadow-chinaRed-500/30 hover:shadow-2xl hover:shadow-chinaRed-500/40 hover:scale-105 active:scale-95 transition-all relative">
+                        <!-- Ripple Waves effect behind speak button -->
+                        <span class="absolute inset-0 rounded-full bg-chinaRed-500/30 animate-ping opacity-75"></span>
+                        <i class="fa-solid fa-volume-high text-4xl relative z-10"></i>
+                        <span class="text-[10px] font-bold uppercase tracking-wider mt-1.5 relative z-10">শোনান</span>
+                    </button>
+                    
+                    <p class="text-xs text-slate-400 text-center">
+                        ডিভাইসের স্পিকারের সাউন্ড বাড়িয়ে রাখুন
+                    </p>
+                </div>
+
+            </div>
+
+            <!-- Swipe/Navigation Bottom Controls -->
+            <div class="px-4 py-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex justify-between items-center transition-colors">
+                <button id="prevBtn" class="flex-1 flex items-center justify-center gap-2 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold text-sm transition-all mr-2">
+                    <i class="fa-solid fa-chevron-left"></i> পূর্ববর্তী
+                </button>
+                <button id="nextBtn" class="flex-1 flex items-center justify-center gap-2 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold text-sm transition-all ml-2">
+                    পরবর্তী <i class="fa-solid fa-chevron-right"></i>
+                </button>
+            </div>
+
+        </section>
+
+    </main>
+
+    <footer class="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-6 transition-colors mt-12 text-center text-xs text-slate-400 dark:text-slate-500">
+        <div class="max-w-4xl mx-auto px-4 space-y-1">
+            <p class="font-semibold text-slate-600 dark:text-slate-400">
+                Bangla to Chinese Tourist Translator &copy; 2026
+            </p>
+            <p>
+                যাত্রার চমৎকার অভিজ্ঞতা নিশ্চিত করতে ডিজাইন করা হয়েছে। শুভ ভ্রমণ! 🇧🇩 🇨🇳
+            </p>
+            <p>
+                A Website by <strong class="text-chinaRed-500">Deb Arnob Barai
+                </strong>.
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // Dynamic Phrase Library (Static & Fast Offline Support)
+        const PHRASES = [
+            // CATEGORY: Emergency & Essentials
+            {
+                id: 1,
+                bangla: "আমাকে সাহায্য করুন।",
+                chinese: "请帮帮我。",
+                pinyin: "Qǐng bāngbāng wǒ.",
+                category: "emergency",
+                catBangla: "🚨 জরুরি ও সাধারণ"
+            },
+            {
+                id: 2,
+                bangla: "আমি চীনা ভাষা বলতে পারি না।",
+                chinese: "我不会说中文。",
+                pinyin: "Wǒ bù huì shuō Zhōngwén.",
+                category: "emergency",
+                catBangla: "🚨 জরুরি ও সাধারণ"
+            },
+            {
+                id: 3,
+                bangla: "বাথরুম/ওয়াশরুম কোথায়?",
+                chinese: "洗手间在哪里？",
+                pinyin: "Xǐshǒujiān zài nǎlǐ?",
+                category: "emergency",
+                catBangla: "🚨 জরুরি ও সাধারণ"
+            },
+            {
+                id: 4,
+                bangla: "এটার দাম কত?",
+                chinese: "这个多少钱？",
+                pinyin: "Zhège duōshǎo qián?",
+                category: "emergency",
+                catBangla: "🚨 জরুরি ও সাধারণ"
+            },
+            {
+                id: 5,
+                bangla: "পুলিশ ডাকুন!",
+                chinese: "帮我报警！",
+                pinyin: "Bāng wǒ bàojǐng!",
+                category: "emergency",
+                catBangla: "🚨 জরুরি ও সাধারণ"
+            },
+            {
+                id: 6,
+                bangla: "আমি অসুস্থ। ডাক্তার ডাকুন দয়া করে।",
+                chinese: "我生病了，请帮我叫医生。",
+                pinyin: "Wǒ shēngbìng le, qǐng bāng wǒ jiào yīshēng.",
+                category: "emergency",
+                catBangla: "🚨 জরুরি ও সাধারণ"
+            },
+
+            // CATEGORY: Transport & Directions
+            {
+                id: 7,
+                bangla: "আমি এই জায়গায় যেতে চাই। (ম্যাপ/ঠিকানা দেখিয়ে)",
+                chinese: "我想去这个地方。",
+                pinyin: "Wǒ xiǎng qù zhège dìfāng.",
+                category: "transport",
+                catBangla: "🚗 যাতায়াত ও দিক"
+            },
+            {
+                id: 8,
+                bangla: "এখানে গাড়ি থামান।",
+                chinese: "请在这里停车。",
+                pinyin: "Qǐng zài zhèlǐ tíngchē.",
+                category: "transport",
+                catBangla: "🚗 যাতায়াত ও দিক"
+            },
+            {
+                id: 9,
+                bangla: "ট্রেন স্টেশন কোথায়?",
+                chinese: "火车站在哪里？",
+                pinyin: "Huǒchēzhàn zài nǎlǐ?",
+                category: "transport",
+                catBangla: "🚗 যাতায়াত ও দিক"
+            },
+            {
+                id: 10,
+                bangla: "এয়ারপোর্ট যাওয়ার রাস্তা কোনটা?",
+                chinese: "去机场怎么走？",
+                pinyin: "Qù jīchǎng zěnme zǒu?",
+                category: "transport",
+                catBangla: "🚗 যাতায়াত ও দিক"
+            },
+            {
+                id: 11,
+                bangla: "মেট্রো স্টেশন কোথায়?",
+                chinese: "地铁站在哪里？",
+                pinyin: "Dìtiězhàn zài nǎlǐ?",
+                category: "transport",
+                catBangla: "🚗 যাতায়াত ও দিক"
+            },
+
+            // CATEGORY: Food & Dining
+            {
+                id: 13,
+                bangla: "আমি শুধু মুরগির মাংস বা সবজি খাই।",
+                chinese: "我只吃鸡肉或者蔬菜。",
+                pinyin: "Wǒ zhǐ chī jīròu huòzhě shūcài.",
+                category: "food",
+                catBangla: "🍜 খাবার ও রেস্তোরাঁ"
+            },
+            {
+                id: 14,
+                bangla: "ঝাল দেবেন না, দয়া করে।",
+                chinese: "请不要放辣。",
+                pinyin: "Qǐng búyào fàng là.",
+                category: "food",
+                catBangla: "🍜 খাবার ও রেস্তোরাঁ"
+            },
+            {
+                id: 15,
+                bangla: "খাবার পানি দিন, দয়া করে।",
+                chinese: "请给我点饮用水。",
+                pinyin: "Qǐng gěi wǒ diǎn yǐnyòngshuǐ.",
+                category: "food",
+                catBangla: "🍜 খাবার ও রেস্তোরাঁ"
+            },
+            {
+                id: 16,
+                bangla: "বিলটা নিয়ে আসুন।",
+                chinese: "请结账。",
+                pinyin: "Qǐng jiézhàng.",
+                category: "food",
+                catBangla: "🍜 খাবার ও রেস্তোরাঁ"
+            },
+            {
+                id: 17,
+                bangla: "মেনু কার্ডটি দিন, দয়া করে।",
+                chinese: "请给我菜单。",
+                pinyin: "Qǐng gěi wǒ càidān.",
+                category: "food",
+                catBangla: "🍜 খাবার ও রেস্তোরাঁ"
+            },
+
+            // CATEGORY: Shopping & Payments
+            {
+                id: 18,
+                bangla: "আমি কি আলিপে/উইচ্যাট দিয়ে পে করতে পারি?",
+                chinese: "可以用支付宝或微信支付吗？",
+                pinyin: "Kěyǐ yòng Zhīfùbǎo huò Wēixìn zhīfù ma?",
+                category: "shopping",
+                catBangla: "🛒 কেনাকাটা ও পেমেন্ট"
+            },
+            {
+                id: 19,
+                bangla: "আপনার পেমেন্ট QR কোডটি দেখান।",
+                chinese: "请给我看你的收款码。",
+                pinyin: "Qǐng gěi wǒ kàn nǐ de shōukuǎnmǎ.",
+                category: "shopping",
+                catBangla: "🛒 কেনাকাটা ও পেমেন্ট"
+            },
+            {
+                id: 20,
+                bangla: "একটু দাম কমানো যাবে?",
+                chinese: "可以便宜一点吗？",
+                pinyin: "Kěyǐ piányi yīdiǎn ma?",
+                category: "shopping",
+                catBangla: "🛒 কেনাকাটা ও পেমেন্ট"
+            },
+            {
+                id: 21,
+                bangla: "আমি এটি নিতে চাই।",
+                chinese: "我想要这个。",
+                pinyin: "Wǒ xiǎng yào zhège.",
+                category: "shopping",
+                catBangla: "🛒 কেনাকাটা ও পেমেন্ট"
+            },
+
+            // CATEGORY: Hotel & Stay
+            {
+                id: 22,
+                bangla: "আমি চেক-ইন করতে চাই।",
+                chinese: "我想办理入住。",
+                pinyin: "Wǒ xiǎng bànlǐ rùzhù.",
+                category: "hotel",
+                catBangla: "🏨 হোটেল ও অবস্থান"
+            },
+            {
+                id: 23,
+                bangla: "ওয়াইফাই পাসওয়ার্ড কি?",
+                chinese: "无线网密码是什么？",
+                pinyin: "Wúxiànwǎng mìmǎ shì shénme?",
+                category: "hotel",
+                catBangla: "🏨 হোটেল ও অবস্থান"
+            },
+            {
+                id: 24,
+                bangla: "আমার রুমের চাবি কাজ করছে না।",
+                chinese: "我的房卡不行了。",
+                pinyin: "Wǒ de fángkǎ bù xíng le.",
+                category: "hotel",
+                catBangla: "🏨 হোটেল ও অবস্থান"
+            },
+            {
+                id: 25,
+                bangla: "দয়া করে আমার জন্য একটা ট্যাক্সি ডেকে দিন।",
+                chinese: "请帮我叫一辆出租车。",
+                pinyin: "Qǐng bāng wǒ jiào yī liàng chūzūchē.",
+                category: "hotel",
+                catBangla: "🏨 হোটেল ও অবস্থান"
+            },
+            {
+                id: 26,
+                bangla: "লাগেজ রাখার জায়গা আছে?",
+                chinese: "可以寄放行李吗？",
+                pinyin: "Kěyǐ jìfàng xíngli ma?",
+                category: "hotel",
+                catBangla: "🏨 হোটেল ও অবস্থান"
+            }
+        ];
+
+        // Global App States
+        let currentFilter = 'all';
+        let searchQuery = '';
+        let currentPhraseIndex = 0;
+        let displayedPhrases = [...PHRASES];
+        let isLargeFont = false;
+
+        // DOM Elements
+        const phraseContainer = document.getElementById('phraseListContainer');
+        const searchInput = document.getElementById('searchInput');
+        const clearSearchBtn = document.getElementById('clearSearch');
+        const emptyState = document.getElementById('emptyState');
+        const activeCount = document.getElementById('activeCount');
+        const categoryGrid = document.getElementById('categoryGrid');
+        
+        // Single Frame DOM Elements
+        const dashboardView = document.getElementById('dashboardView');
+        const singleFrameView = document.getElementById('singleFrameView');
+        const closeFrameBtn = document.getElementById('closeFrameBtn');
+        const frameBangla = document.getElementById('frameBangla');
+        const frameChinese = document.getElementById('frameChinese');
+        const framePinyin = document.getElementById('framePinyin');
+        const frameCategoryBadge = document.getElementById('frameCategoryBadge');
+        const frameSpeakBtn = document.getElementById('frameSpeakBtn');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const speechWaveform = document.getElementById('speechWaveform');
+        const toggleFontSizeBtn = document.getElementById('toggleFontSizeBtn');
+        const copyChineseBtn = document.getElementById('copyChineseBtn');
+
+        // Modal Elements
+        const infoModal = document.getElementById('infoModal');
+        const infoContent = document.getElementById('infoContent');
+        const infoToggle = document.getElementById('infoToggle');
+        const closeInfo = document.getElementById('closeInfo');
+        const confirmInfo = document.getElementById('confirmInfo');
+
+        // Custom Toast Function
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMsg.innerText = message;
+            if (type === 'success') {
+                toastIcon.className = "fa-solid fa-circle-check text-emerald-400";
+            } else {
+                toastIcon.className = "fa-solid fa-triangle-exclamation text-rose-500";
+            }
+
+            toast.classList.remove('opacity-0');
+            toast.classList.add('opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('opacity-100');
+                toast.classList.add('opacity-0');
+            }, 2500);
+        }
+
+        // Initialize Speech Synthesis
+        let synthesisVoice = null;
+
+        function loadVoices() {
+            if ('speechSynthesis' in window) {
+                const voices = window.speechSynthesis.getVoices();
+                // Prefer native Chinese female speech voices or fallback
+                synthesisVoice = voices.find(v => v.lang.startsWith('zh-CN')) || voices.find(v => v.lang.startsWith('zh'));
+            }
+        }
+
+        // Handle async voice loading in SpeechSynthesis API
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.onvoiceschanged = loadVoices;
+            loadVoices();
+        }
+
+        // TTS Pronunciation Engine
+        function speakChinese(text) {
+            if (!('speechSynthesis' in window)) {
+                showToast("দুঃখিত, আপনার ডিভাইসে ভয়েস উচ্চারণ উপলব্ধ নেই।", "error");
+                return;
+            }
+
+            // Stop any ongoing speech
+            window.speechSynthesis.cancel();
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'zh-CN';
+            utterance.rate = 0.85; // slightly slower rate for absolute phonetic clarity
+
+            if (synthesisVoice) {
+                utterance.voice = synthesisVoice;
+            }
+
+            utterance.onstart = () => {
+                speechWaveform.classList.remove('opacity-0');
+            };
+
+            utterance.onend = () => {
+                speechWaveform.classList.add('opacity-0');
+            };
+
+            utterance.onerror = (e) => {
+                speechWaveform.classList.add('opacity-0');
+                showToast("অডিও চালু হতে ব্যর্থ হয়েছে।", "error");
+            };
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // Render Phrases in Dashboard list
+        function renderPhrases() {
+            phraseContainer.innerHTML = '';
+            
+            // Filter list matching search & category selected
+            displayedPhrases = PHRASES.filter(phrase => {
+                const matchesCategory = currentFilter === 'all' || phrase.category === currentFilter;
+                const matchesSearch = phrase.bangla.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                      phrase.chinese.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                      phrase.pinyin.toLowerCase().includes(searchQuery.toLowerCase());
+                return matchesCategory && matchesSearch;
+            });
+
+            // Handle Empty State
+            if (displayedPhrases.length === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            // Update Badge Count
+            activeCount.innerText = `${displayedPhrases.length} টি অনুবাদ`;
+
+            // Render matching translation cards
+            displayedPhrases.forEach((phrase, index) => {
+                const card = document.createElement('div');
+                card.className = "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 hover:shadow-md transition-all duration-300 cursor-pointer flex justify-between items-center group active:scale-[0.99]";
+                
+                // Fetch proper category emojis for small thumbnail
+                let iconEmoji = "🌎";
+                if(phrase.category === 'emergency') iconEmoji = "🚨";
+                else if(phrase.category === 'transport') iconEmoji = "🚗";
+                else if(phrase.category === 'food') iconEmoji = "🍜";
+                else if(phrase.category === 'shopping') iconEmoji = "🛒";
+                else if(phrase.category === 'hotel') iconEmoji = "🏨";
+
+                card.innerHTML = `
+                    <div class="flex-1 pr-4">
+                        <div class="flex items-center space-x-2 mb-1.5">
+                            <span class="text-sm shrink-0">${iconEmoji}</span>
+                            <span class="text-[10px] uppercase tracking-wider font-bold text-slate-400 dark:text-slate-500">${phrase.catBangla}</span>
+                        </div>
+                        <h4 class="text-base font-bold text-slate-800 dark:text-slate-100 group-hover:text-chinaRed-500 transition-colors">${phrase.bangla}</h4>
+                        <div class="mt-2 flex flex-wrap items-baseline gap-2">
+                            <span class="text-sm font-semibold text-slate-700 dark:text-slate-300 tracking-wide">${phrase.chinese}</span>
+                            <span class="text-xs font-medium text-slate-400">${phrase.pinyin}</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2 shrink-0">
+                        <button class="list-speak-btn p-3 rounded-full bg-slate-100 hover:bg-chinaRed-100 hover:text-chinaRed-600 dark:bg-slate-800 dark:hover:bg-chinaRed-950/40 dark:hover:text-chinaRed-400 text-slate-500 dark:text-slate-300 transition-all" data-id="${phrase.id}">
+                            <i class="fa-solid fa-volume-high"></i>
+                        </button>
+                    </div>
+                `;
+
+                // Single card click transitions viewport to distraction-free frame
+                card.addEventListener('click', (e) => {
+                    // Prevent firing if speak button alone was clicked
+                    if (e.target.closest('.list-speak-btn')) return;
+                    openSingleFrame(index);
+                });
+
+                // Set speaker triggers
+                card.querySelector('.list-speak-btn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    speakChinese(phrase.chinese);
+                });
+
+                phraseContainer.appendChild(card);
+            });
+        }
+
+        // Category selections click listeners
+        categoryGrid.querySelectorAll('.cat-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                categoryGrid.querySelectorAll('.cat-btn').forEach(b => {
+                    b.className = "cat-btn flex flex-col items-center justify-center p-3 rounded-2xl bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 hover:border-chinaRed-500 hover:shadow-md transition-all";
+                });
+                
+                // Mark clicked as active
+                btn.className = "cat-btn flex flex-col items-center justify-center p-3 rounded-2xl bg-chinaRed-600 text-white border-2 border-transparent transition-all shadow-md";
+                
+                currentFilter = btn.getAttribute('data-cat');
+                renderPhrases();
+            });
+        });
+
+        // Search inputs listeners
+        searchInput.addEventListener('input', (e) => {
+            searchQuery = e.target.value.trim();
+            if (searchQuery.length > 0) {
+                clearSearchBtn.classList.remove('hidden');
+            } else {
+                clearSearchBtn.classList.add('hidden');
+            }
+            renderPhrases();
+        });
+
+        clearSearchBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            searchQuery = '';
+            clearSearchBtn.classList.add('hidden');
+            renderPhrases();
+        });
+
+        // Open Single Frame Distraction-free mode
+        function openSingleFrame(index) {
+            currentPhraseIndex = index;
+            updateFrameDetails();
+            
+            // GSAP Seamless Entrance Animation
+            singleFrameView.classList.remove('hidden');
+            gsap.fromTo(singleFrameView, 
+                { opacity: 0, y: 50 }, 
+                { opacity: 1, y: 0, duration: 0.35, ease: 'power2.out' }
+            );
+        }
+
+        // Close Single Frame Mode
+        function closeSingleFrame() {
+            // Stop TTS speaking when user backs out
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+            }
+
+            gsap.to(singleFrameView, {
+                opacity: 0,
+                y: 30,
+                duration: 0.25,
+                ease: 'power2.in',
+                onComplete: () => {
+                    singleFrameView.classList.add('hidden');
+                }
+            });
+        }
+
+        // Update single frame content based on dynamic index pointer
+        function updateFrameDetails() {
+            const phrase = displayedPhrases[currentPhraseIndex];
+            if (!phrase) return;
+
+            // Content bindings
+            frameBangla.innerText = phrase.bangla;
+            frameChinese.innerText = phrase.chinese;
+            framePinyin.innerText = phrase.pinyin;
+            frameCategoryBadge.innerText = phrase.catBangla;
+
+            // Manage navigation button disable limits
+            if (currentPhraseIndex === 0) {
+                prevBtn.classList.add('opacity-40', 'pointer-events-none');
+            } else {
+                prevBtn.classList.remove('opacity-40', 'pointer-events-none');
+            }
+
+            if (currentPhraseIndex === displayedPhrases.length - 1) {
+                nextBtn.classList.add('opacity-40', 'pointer-events-none');
+            } else {
+                nextBtn.classList.remove('opacity-40', 'pointer-events-none');
+            }
+
+            // Speak current Chinese characters directly
+            speakChinese(phrase.chinese);
+        }
+
+        // Navigate prev/next phrases in single frame view
+        prevBtn.addEventListener('click', () => {
+            if (currentPhraseIndex > 0) {
+                currentPhraseIndex--;
+                // Swipe transition effect
+                gsap.fromTo('#frameChinese, #framePinyin, #frameBangla', 
+                    { opacity: 0, x: -50 },
+                    { opacity: 1, x: 0, duration: 0.25, ease: 'power2.out' }
+                );
+                updateFrameDetails();
+            }
+        });
+
+        nextBtn.addEventListener('click', () => {
+            if (currentPhraseIndex < displayedPhrases.length - 1) {
+                currentPhraseIndex++;
+                // Swipe transition effect
+                gsap.fromTo('#frameChinese, #framePinyin, #frameBangla', 
+                    { opacity: 0, x: 50 },
+                    { opacity: 1, x: 0, duration: 0.25, ease: 'power2.out' }
+                );
+                updateFrameDetails();
+            }
+        });
+
+        // Trigger Audio inside Frame View
+        frameSpeakBtn.addEventListener('click', () => {
+            const currentText = frameChinese.innerText;
+            speakChinese(currentText);
+        });
+
+        // Toggle Font Zoom Option
+        toggleFontSizeBtn.addEventListener('click', () => {
+            isLargeFont = !isLargeFont;
+            if (isLargeFont) {
+                frameChinese.className = "text-8xl md:text-9xl font-black text-slate-950 dark:text-white tracking-widest transition-all duration-300 leading-none";
+                toggleFontSizeBtn.classList.add('bg-chinaRed-100', 'text-chinaRed-600', 'dark:bg-chinaRed-950/40');
+                showToast("চীনা ফন্ট সর্বোচ্চ বড় করা হয়েছে!");
+            } else {
+                frameChinese.className = "text-6xl md:text-8xl font-black text-slate-950 dark:text-white tracking-wide transition-all duration-300 leading-tight";
+                toggleFontSizeBtn.classList.remove('bg-chinaRed-100', 'text-chinaRed-600', 'dark:bg-chinaRed-950/40');
+                showToast("ফন্ট স্বাভাবিক সাইজে আনা হয়েছে।");
+            }
+        });
+
+        // Clipboard copy operation utilizing dynamic selection / execCommand for robust iframe support
+        copyChineseBtn.addEventListener('click', () => {
+            const textToCopy = frameChinese.innerText;
+            
+            // Create dummy textarea
+            const dummy = document.createElement("textarea");
+            document.body.appendChild(dummy);
+            dummy.value = textToCopy;
+            dummy.select();
+            
+            try {
+                document.execCommand("copy");
+                showToast("চীনা লেখা সফলভাবে কপি হয়েছে!");
+            } catch (err) {
+                showToast("লেখাটি কপি করা যায়নি।", "error");
+            }
+            
+            document.body.removeChild(dummy);
+        });
+
+        // Mobile Swiping support inside Single Frame for fast interactions
+        let touchstartX = 0;
+        let touchendX = 0;
+
+        function checkDirection() {
+            if (touchendX < touchstartX - 70) {
+                // Swiped Left -> Go Next
+                if (currentPhraseIndex < displayedPhrases.length - 1) {
+                    nextBtn.click();
+                }
+            }
+            if (touchendX > touchstartX + 70) {
+                // Swiped Right -> Go Prev
+                if (currentPhraseIndex > 0) {
+                    prevBtn.click();
+                }
+            }
+        }
+
+        singleFrameView.addEventListener('touchstart', e => {
+            touchstartX = e.changedTouches[0].screenX;
+        }, {passive: true});
+
+        singleFrameView.addEventListener('touchend', e => {
+            touchendX = e.changedTouches[0].screenX;
+            checkDirection();
+        }, {passive: true});
+
+        // Close Frame handler
+        closeFrameBtn.addEventListener('click', closeSingleFrame);
+
+        // Dark Mode Logic
+        const themeToggle = document.getElementById('themeToggle');
+
+        // Check local storage or system preference
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+
+        themeToggle.addEventListener('click', () => {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
+                showToast("লাইট মোড সক্রিয় করা হয়েছে।");
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
+                showToast("ডার্ক মোড সক্রিয় করা হয়েছে।");
+            }
+        });
+
+        // Info Modal Control Events
+        infoToggle.addEventListener('click', () => {
+            infoModal.classList.remove('hidden');
+            infoModal.classList.add('flex');
+            gsap.to(infoModal, { opacity: 1, duration: 0.2 });
+            gsap.fromTo(infoContent, 
+                { scale: 0.95, y: 15 }, 
+                { scale: 1, y: 0, duration: 0.3, ease: 'back.out(1.5)' }
+            );
+        });
+
+        function hideInfoModal() {
+            gsap.to(infoContent, {
+                scale: 0.95,
+                y: 15,
+                duration: 0.2,
+                ease: 'power2.in'
+            });
+            gsap.to(infoModal, {
+                opacity: 0,
+                duration: 0.2,
+                onComplete: () => {
+                    infoModal.classList.add('hidden');
+                    infoModal.classList.remove('flex');
+                }
+            });
+        }
+
+        closeInfo.addEventListener('click', hideInfoModal);
+        confirmInfo.addEventListener('click', hideInfoModal);
+        
+        // Hide modal on outer wrapper click
+        infoModal.addEventListener('click', (e) => {
+            if (e.target === infoModal) {
+                hideInfoModal();
+            }
+        });
+
+        // Start up functions
+        window.onload = function () {
+            renderPhrases();
+        }
+    </script>
+</body>
+</html>
